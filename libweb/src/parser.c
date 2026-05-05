@@ -74,7 +74,7 @@ ptr status_code_strings[][2] = {
     NULL
 };
 
-handler_t request_handler(cwr_t wr)
+handler_t request_handler(_thread_ *thr, cwr_t wr)
 {
 	wr->content = sock_read(wr->socket);
 	int len = __get_meta__(wr->content)->length;
@@ -82,15 +82,13 @@ handler_t request_handler(cwr_t wr)
 	if(len < 3)
 	{
 		println("Malform request...!\n");
-		thread_kill(wr->thread);
-		request_Destruct(wr);
+    	_thread_kill(thr, (handler_t)request_Destruct, 1);
 		return NULL;
 	}
 
 	/* A Web request involves arguments by space even with lines so */
 	if(find_char(wr->content, ' ') == -1) {
-		thread_kill(wr->thread);
-		request_Destruct(wr);
+    	_thread_kill(thr, (handler_t)request_Destruct, 1);
 		return NULL;
 	}
 
@@ -98,8 +96,7 @@ handler_t request_handler(cwr_t wr)
 	if(wr->line_count == 0)
 	{
 		println("Malform request\n");
-		thread_kill(wr->thread);
-		request_Destruct(wr);
+    	_thread_kill(thr, (handler_t)request_Destruct, 1);
 		return NULL;
 	}
 
@@ -121,8 +118,7 @@ handler_t request_handler(cwr_t wr)
 	int r = find_route(_WEB_, wr->path);
 	if(r == -1) {
 		print_args((string []){"[ WEB_SERVER ]: Attempt @ ", info[1], "\n", 0});
-		thread_kill(wr->thread);
-		request_Destruct(wr);
+    	_thread_kill(thr, (handler_t)request_Destruct, 1);
 		return NULL;
 	}
 	
@@ -138,8 +134,7 @@ handler_t request_handler(cwr_t wr)
 	_WEB_->routes[r]->handle(_WEB_->routes[r], wr);
 
 	println("[REQUEST]: REQ DONE!");
-	thread_kill(wr->thread);
-	request_Destruct(wr);
+    _thread_kill(thr, (handler_t)request_Destruct, 1);
 	return NULL;
 }
 
@@ -193,7 +188,6 @@ i32 parse_get_params(cwr_t wr)
 fn parse_request(cwr_t wr)
 {
 	bool capture_body = false;
-	_printf("Thread ID: %d\n", (void *)&wr->thread->pid);
 	int len = __get_meta__(wr->content)->length;
 	wr->body = allocate(0, len);
 

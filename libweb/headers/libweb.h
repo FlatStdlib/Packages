@@ -31,7 +31,7 @@ typedef struct
 	string			body;
 	sArr			lines;
 	i32				line_count;
-	thread_t		thread;
+	_thread_		thread;
 } _cwr;
 
 typedef _cwr 		cwr;
@@ -65,7 +65,7 @@ fn web_append_route(cws_t ws, route_t route);
 int find_route(cws_t ws, string route);
 
 // parser.c
-handler_t request_handler(cwr_t wr);
+handler_t request_handler(_thread_ *thr, cwr_t wr);
 fn parse_request(cwr_t wr);
 fn parse_post(cwr_t wr);
 public fn strip_uri(cwr_t wr);

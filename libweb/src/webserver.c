@@ -46,9 +46,8 @@ handler_t listen_for_request(cws_t ws) {
 		if(!wr)
 			fsl_panic("error, unable to allocate new request struct");
 		wr->socket = client;
-		wr->thread = allocate(0, sizeof(_thread));
-		*wr->thread = create_thread((handler_t)request_handler, wr, 0);
-		run_thread(wr->thread, 0);
+		wr->thread = init_thread((handler_t)request_handler, wr, false, false);;
+		_run_thread(&wr->thread, true);
 	}
 
 	println("[ WEB_SERVER ] Exiting...");
