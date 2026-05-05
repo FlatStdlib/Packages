@@ -4,11 +4,11 @@ all: compile_w_ssl
 
 download_lb:
 	git clone https://github.com/CoreSTD/base.git
-	git clone https://github.com/CoreSTD/lbg-compiler.git
+	git clone https://github.com/CoreSTD/fsl.git
 	cd base; sudo make; cd ..
 	sudo make lib
 	rm -rf base
-	rm -rf lbg-compiler
+	rm -rf fsl-compiler
 
 compile_w_ssl:
 	gcc -ffreestanding \
@@ -18,7 +18,7 @@ compile_w_ssl:
 
 
 lib:
-	lbg -c --output a.out \
+	fsl -c --output a.out \
     src/webserver.c \
     src/parser.c \
     src/router.c \
@@ -29,7 +29,7 @@ lib:
 
 # Bloatware
 NOSSL:
-	lbg --output a.out \
+	fsl --output a.out \
 	tests/web.c \
 	src/webserver.c \
 	src/parser.c \

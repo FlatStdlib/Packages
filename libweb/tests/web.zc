@@ -1,7 +1,7 @@
-//> link: -lweb -lbase
+//> link: -lweb -lfsl
 raw {
-	#include <libbase.h>
-	#include "Packages/libweb/headers/libweb.h"
+	#include <fsl.h>
+	#include "headers/libweb.h"
 
 	void page_handle(route_t r, cwr_t wr)
 	{

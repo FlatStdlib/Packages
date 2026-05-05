@@ -1,7 +1,7 @@
 #include "../headers/libweb.h"
-
+#define __FSL_DEBUG__
 handler_t index_page(route_t r, cwr_t wr) {
-send_response(wr, (_response){ OK, 0, 0, 
+	send_response(wr, (_response){ OK, 0, 0, 
 		(
 			"<html>\n" 
 			"<head>\n"
@@ -18,6 +18,7 @@ send_response(wr, (_response){ OK, 0, 0,
 }
 
 int entry() {
+	toggle_debug_mode();
 	uninit_mem();
 	set_heap_sz(_HEAP_PAGE_ * 5);
 	init_mem();

@@ -24,18 +24,18 @@ bool get_html_template(route_t r, string template_file)
 
     fd_t file = open_file(template_file, 0, 0);
     if(!file)
-        lb_panic("unable to read html file..!");
+        fsl_panic("unable to read html file..!");
 
     i32 sz = file_content_size(file);
     if(sz <= 0)
-        lb_panic("cannot read file");
+        fsl_panic("cannot read file");
 
     r->template = allocate(0, sz + 1);
     if(!r->template)
-        lb_panic("segfault");
+        fsl_panic("segfault");
     i32 bytes = file_read(file, r->template, sz);
     if(bytes <= 0)
-        lb_panic("[ WEB_SERVER ]: unable to read html file data....!");
+        fsl_panic("[ WEB_SERVER ]: unable to read html file data....!");
 
     r->template[sz] = '\0';
     file_close(file);

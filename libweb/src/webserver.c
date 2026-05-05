@@ -4,7 +4,7 @@ cws_t init_web_server(string ip, i32 port)
 {
 	cws_t ws = allocate(0, sizeof(_cws));
 	if(!ws)
-		lb_panic("Segfault");
+		fsl_panic("Segfault");
 
 	ws->ip = ip;
 	ws->port = port;
@@ -23,9 +23,10 @@ fn start_web_server(cws_t ws, int thread)
 	{
 		ws->thread = allocate(0, sizeof(_thread));
 		if(!ws->thread)
-		lb_panic("error, unable to allocate mem");
+		fsl_panic("error, unable to allocate mem");
 
-		*ws->thread = start_thread((handler_t)listen_for_request, ws, 0);
+		*ws->thread = create_thread((handler_t)listen_for_request, ws, 0);
+		run_thread(ws->thread, 0);
 	} else {
 		listen_for_request(ws);
 	}
@@ -35,7 +36,7 @@ handler_t listen_for_request(cws_t ws) {
 	sock_t client;
 	while(1)
 	{
-		if(__LB_DEBUG__)
+		if(__FSL_DEBUG__)
 			println("[ WEB_SERVER ] Listening for web requests....!");
 
 		if(!(client = sock_accept(ws->connection, 1024)))
@@ -43,10 +44,11 @@ handler_t listen_for_request(cws_t ws) {
 
 		cwr_t wr = allocate(0, sizeof(_cwr));
 		if(!wr)
-			lb_panic("error, unable to allocate new request struct");
+			fsl_panic("error, unable to allocate new request struct");
 		wr->socket = client;
 		wr->thread = allocate(0, sizeof(_thread));
-		*wr->thread = start_thread((handler_t)request_handler, wr, 0);
+		*wr->thread = create_thread((handler_t)request_handler, wr, 0);
+		run_thread(wr->thread, 0);
 	}
 
 	println("[ WEB_SERVER ] Exiting...");

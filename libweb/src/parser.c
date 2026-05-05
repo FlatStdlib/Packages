@@ -82,17 +82,24 @@ handler_t request_handler(cwr_t wr)
 	if(len < 3)
 	{
 		println("Malform request...!\n");
+		thread_kill(wr->thread);
+		request_Destruct(wr);
 		return NULL;
 	}
 
 	/* A Web request involves arguments by space even with lines so */
-	if(find_char(wr->content, ' ') == -1)
+	if(find_char(wr->content, ' ') == -1) {
+		thread_kill(wr->thread);
+		request_Destruct(wr);
 		return NULL;
+	}
 
 	wr->lines = split_lines(wr->content, &wr->line_count);
 	if(wr->line_count == 0)
 	{
 		println("Malform request\n");
+		thread_kill(wr->thread);
+		request_Destruct(wr);
 		return NULL;
 	}
 
@@ -114,12 +121,14 @@ handler_t request_handler(cwr_t wr)
 	int r = find_route(_WEB_, wr->path);
 	if(r == -1) {
 		print_args((string []){"[ WEB_SERVER ]: Attempt @ ", info[1], "\n", 0});
+		thread_kill(wr->thread);
+		request_Destruct(wr);
 		return NULL;
 	}
 	
 	print_args((string []){"[ WEB_SERVER ]: New request @ ", info[1], "\n", 0});
 
-	if(__LB_DEBUG__)
+	if(__FSL_DEBUG__)
 		print_args((string []){"Triggering: ", _WEB_->routes[r]->name, "\n", 0});
 
 	if(_WEB_->routes[r]->parse_req) {
@@ -128,8 +137,9 @@ handler_t request_handler(cwr_t wr)
 
 	_WEB_->routes[r]->handle(_WEB_->routes[r], wr);
 
+	println("[REQUEST]: REQ DONE!");
+	thread_kill(wr->thread);
 	request_Destruct(wr);
-	thread_kill(_WEB_->routes[r]);
 	return NULL;
 }
 
@@ -183,7 +193,7 @@ i32 parse_get_params(cwr_t wr)
 fn parse_request(cwr_t wr)
 {
 	bool capture_body = false;
-
+	_printf("Thread ID: %d\n", (void *)&wr->thread->pid);
 	int len = __get_meta__(wr->content)->length;
 	wr->body = allocate(0, len);
 
@@ -220,7 +230,7 @@ fn parse_request(cwr_t wr)
 				continue;
 			} else if(arg_c < 2)
 			{
-				lb_panic("unable to get header arguments!");
+				fsl_panic("unable to get header arguments!");
 				// TODO; CHANGE, THIS ACTUALLY DOESNT FREE THE ELEMENTS
 				pfree((array)args, 1);
 				continue;
@@ -228,7 +238,7 @@ fn parse_request(cwr_t wr)
 
 			int pos = find_char(wr->lines[i], ':');
 			if(!map_append(wr->headers, args[0], wr->lines[i] + (pos + 2)))
-				lb_panic("failed to get header");
+				fsl_panic("failed to get header");
 			
 			// TODO; CHANGE, THIS ACTUALLY DOESNT FREE THE ELEMENTS
 			pfree((array)args, 1);
@@ -345,7 +355,8 @@ fn request_Destruct(cwr_t wr)
 	if(wr->content)
 		pfree(wr->content, 1);
 
-	if(wr->body, 1);
+	if(wr->body)
+		pfree(wr->body, 0);
 
 	if(wr->lines);
 		pfree_array((array)wr->lines);
@@ -411,7 +422,7 @@ fn send_response(cwr_t wr, _response r, bool heap_content)
 		str_append_array(ctx, (ptr []){r.content, "\r\n\r\n", NULL});
 
     sock_write(wr->socket, ctx);
-    if(__LB_DEBUG__)
+    if(__FSL_DEBUG__)
         print("Generated Response: "), println(ctx);
 
     pfree(ctx, 1);
