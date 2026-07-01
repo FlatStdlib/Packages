@@ -131,7 +131,7 @@ handler_t request_handler(_thread_ *thr, cwr_t wr)
 		parse_request(wr);
 	}
 
-	_WEB_->routes[r]->handle(_WEB_->routes[r], wr);
+	((void *(*)(route_t, cwr_t))_WEB_->routes[r]->handle)(_WEB_->routes[r], wr);
 
 	println("[REQUEST]: REQ DONE!");
     _thread_kill(thr, (handler_t)request_Destruct, 1);

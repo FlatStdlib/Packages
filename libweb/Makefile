@@ -12,8 +12,8 @@ download_lb:
 
 compile_w_ssl:
 	gcc -ffreestanding \
-	web.c src/*.c \
-	/usr/lib/libclibp.a \
+	tests/web.c src/*.c \
+	/usr/lib/libfsl.a \
 	-lssl -lcrypto
 
 
