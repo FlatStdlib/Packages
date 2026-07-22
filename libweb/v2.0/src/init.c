@@ -18,6 +18,7 @@ web_t init_web_server(string ip, i32 port)
 
 void run(web_t w)
 {
+    // register web_t w asm("r13");
     w->running = true;
     while(w->running != false)
     {
@@ -44,6 +45,13 @@ void request_handler()
         // sock_close(client);
         return;
     }
+
+    // if(!str_startswith(rdata, "GET") || !str_startswith(rdata, "POST"))
+    // {
+    //     req_destruct(r);
+    //     sock_close(client);
+    //     return;
+    // }
 
     r->lines = split_string(rdata, '\n', &r->line_count);
     int argc = 0;
@@ -177,16 +185,23 @@ void send_response(sock_t sock, status_code_t c0de, map_t headers, map_t cookies
 	if(__syscall__(sock->fd, (long)response, _str_len(response), -1, -1, -1, _SYS_WRITE) <= 0)
 		println("Error, Failed to send data to client request!");
 
-    free(response);
+    _pfree(response);
 }
 
 i32 search_route(web_t w, string q)
 {
-    for(int i = 0; i < __get_meta__(w->router)->length; i++)
+    if(!w || !q)
+        return -1;
+
+    int len = __get_meta__(w->router)->length;
+    for(int i = 0; i < len; i++)
     {
         if(!w->router[i]) break;
-        if(str_cmp(((route_t)w->router[i])->route, q))
+        if(str_cmp(q, "/") && len > 0) {
+            return 0;
+        } else if(mem_cmp(((route_t)w->router[i])->route, q, _str_len(((route_t)w->router[i])->route))) {
             return i;
+        }
     }
 
     return -1;
@@ -214,6 +229,9 @@ void req_destruct(req_t r)
 
 	if(r->lines)
 		pfree_array((array)r->lines);
+
+    if(r->con)
+        sock_close(r->con);
 
     _pfree(r);
 }
