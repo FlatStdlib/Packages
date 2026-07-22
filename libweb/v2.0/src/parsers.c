@@ -124,7 +124,7 @@ string decode_input_symbols(const string data) {
             for(int b = 0; b < rm_len; b++)
                 trim_char_idx(buff, pos);
                 
-            // n.InsertAtIdx(&n, pos - 1, ((char)((char *)EncodedSymbols[i])[0]));
+            // buff[pos - 1] = ((char)((char *)EncodedSymbols[i])[0]);
             pos = -1;
         }
     }

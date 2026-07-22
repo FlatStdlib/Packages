@@ -41,7 +41,7 @@ void request_handler()
     string rdata = sock_read(client);
     if(!rdata) {
         req_destruct(r);
-        sock_close(client);
+        // sock_close(client);
         return;
     }
 
