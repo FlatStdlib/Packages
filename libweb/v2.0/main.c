@@ -1,14 +1,5 @@
 #include "src/init.h"
 
-field_t create_content_length(i32 sz)
-{ 
-    field_t f = allocate(sizeof(_field), 1);
-    f->key = str_dup("Content-length");
-    f->value = int_to_str(sz);
-
-    return f;
-}
-
 void _test(req_t r)
 {
     string resp = "Hello World";
