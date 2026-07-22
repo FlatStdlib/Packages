@@ -39,22 +39,20 @@ void request_handler()
     req_t r = allocate(sizeof(_req), 1);
 
     string rdata = sock_read(client);
-    if(!rdata) return;
+    if(!rdata) {
+        req_destruct(r);
+        sock_close(client);
+        return;
+    }
 
     r->lines = split_string(rdata, '\n', &r->line_count);
     int argc = 0;
 
     sArr args = split_string(r->lines[0], ' ', &argc);
     if(argc < 3 || !args) {
-        pfree_array((array)r->lines);
-        return;
-    }
-
-    int pos = 0;
-    if((pos = search_route(WEB_SERVER, args[1])) == -1)
-    {
-        pfree_array((array)args);
-        pfree_array((array)r->lines);
+        req_destruct(r);
+        _pfree(rdata);
+        sock_close(client);
         return;
     }
 
@@ -94,6 +92,17 @@ void request_handler()
             map_append(r->GET, key[0], key[1]);
             pfree_array((array)key);
         }
+    }
+
+    
+    int pos = 0;
+    if((pos = search_route(WEB_SERVER, r->route)) == -1)
+    {
+        req_destruct(r);
+        _pfree(rdata);
+        pfree_array((array)args);
+        sock_close(client);
+        return;
     }
 
     r->body = allocate(0, 4096);
