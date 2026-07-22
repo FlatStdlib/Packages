@@ -106,3 +106,32 @@ string code_2_str(status_code_t c0de)
 
 	return NULL;
 }
+
+string decode_input_symbols(const string data) {
+    if(!data)
+        return NULL;
+
+    string buff = allocate(0, str_len(data));
+    str_append(buff, data);
+
+    for(int i = 0; i < ENCODED_SYMBOL_COUNT; i++) {
+        if(!EncodedSymbols[i])
+            break;
+
+        int pos = -1;
+        while((pos = find_string(buff, EncodedSymbols[i][1])) != -1) {
+            int rm_len = str_len(EncodedSymbols[i][1]);
+            for(int b = 0; b < rm_len; b++)
+                trim_char_idx(buff, pos);
+                
+            // n.InsertAtIdx(&n, pos - 1, ((char)((char *)EncodedSymbols[i])[0]));
+            pos = -1;
+        }
+    }
+
+    if(str_len(buff) > 0)
+        return buff;
+
+    _pfree(buff);
+    return NULL;
+}
