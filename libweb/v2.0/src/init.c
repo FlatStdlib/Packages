@@ -176,6 +176,8 @@ void send_response(sock_t sock, status_code_t c0de, map_t headers, map_t cookies
 
 	if(__syscall__(sock->fd, (long)response, _str_len(response), -1, -1, -1, _SYS_WRITE) <= 0)
 		println("Error, Failed to send data to client request!");
+
+    free(response);
 }
 
 i32 search_route(web_t w, string q)
