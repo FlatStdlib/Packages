@@ -16,7 +16,7 @@ web_t init_web_server(string ip, i32 port)
     return w;
 }
 
-void run(web_t w)
+void web_run(web_t w)
 {
     // register web_t w asm("r13");
     w->running = true;
@@ -38,12 +38,12 @@ void request_handler()
     if(!client) return;
     
     req_t r = allocate(sizeof(_req), 1);
+    r->con = client;
 
     string rdata = sock_read(client);
     if(!rdata) {
         req_destruct(r);
-        // sock_close(client);
-        return;
+        __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
     }
 
     // if(!str_startswith(rdata, "GET") || !str_startswith(rdata, "POST"))
@@ -54,19 +54,24 @@ void request_handler()
     // }
 
     r->lines = split_string(rdata, '\n', &r->line_count);
-    int argc = 0;
-
-    sArr args = split_string(r->lines[0], ' ', &argc);
-    if(argc < 3 || !args) {
+    if(r->line_count > 0 && r->line_count < 2) {
         req_destruct(r);
         _pfree(rdata);
-        sock_close(client);
-        return;
+        __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
+    }
+
+    int argc = 0;
+    sArr args = split_string(r->lines[0], ' ', &argc);
+    if(argc > 0 && argc < 3) {
+        req_destruct(r);
+        _pfree(rdata);
+        __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
     }
 
     r->req_type = str_dup(args[0]);
     r->route = str_dup(args[1]);
     r->req_version = str_dup(args[2]);
+    pfree_array((array)args);
 
     i32 rpos = 0;
     i32 len = str_len(r->route);
@@ -108,9 +113,7 @@ void request_handler()
     {
         req_destruct(r);
         _pfree(rdata);
-        pfree_array((array)args);
-        sock_close(client);
-        return;
+        __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
     }
 
     r->body = allocate(0, 4096);
@@ -144,7 +147,6 @@ void request_handler()
 		str_append(r->body, line);
 	}
     
-    r->con = client;
     _printf("[WEB_SERVER] New request for '%s'\n", r->route);
     ((void *(*)(req_t))((route_t)WEB_SERVER->router[pos])->handler)(r);
 
@@ -197,7 +199,7 @@ i32 search_route(web_t w, string q)
     for(int i = 0; i < len; i++)
     {
         if(!w->router[i]) break;
-        if(str_cmp(q, "/") && len > 0) {
+        if(str_cmp(q, "/") && len > 1) {
             return 0;
         } else if(mem_cmp(((route_t)w->router[i])->route, q, _str_len(((route_t)w->router[i])->route))) {
             return i;

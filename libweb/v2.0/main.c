@@ -20,7 +20,7 @@ void _test(req_t r)
 int entry()
 {
     toggle_debug_mode();
-	uninit_mem();
+	// uninit_mem();
 	set_heap_sz(_HEAP_PAGE_ * 40);
 	init_mem();
     
@@ -35,7 +35,7 @@ int entry()
         .handler = (void *)_test
     }, sizeof(_route));
 
-    run(web);
+    web_run(web);
     // run_thread(run, web);
     println("[ + ] Web Server Started....");
 
@@ -48,3 +48,5 @@ int entry()
 
     return 0;
 }
+
+int main() { return entry(); }
