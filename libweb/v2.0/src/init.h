@@ -132,6 +132,7 @@ extern web_t WEB_SERVER;
 web_t init_web_server(string ip, i32 port);
 void web_run(web_t w);
 void request_handler();
+void parse_req_info(req_t r);
 void send_response(sock_t sock, status_code_t c0de, map_t headers, map_t cookies, string body);
 i32 search_route(web_t w, string q);
 void req_destruct(req_t r);

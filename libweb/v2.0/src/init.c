@@ -38,34 +38,36 @@ void request_handler()
     if(!client) return;
     
     req_t r = allocate(sizeof(_req), 1);
+    memzero(r, sizeof(_req));
     r->con = client;
 
     string rdata = sock_read(client);
     if(!rdata) {
         req_destruct(r);
-        __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
+        __syscall__(1, -1, -1, -1, -1, -1, _SYS_EXIT);
     }
 
-    // if(!str_startswith(rdata, "GET") || !str_startswith(rdata, "POST"))
-    // {
-    //     req_destruct(r);
-    //     sock_close(client);
-    //     return;
-    // }
+    if(str_startswith(rdata, "GET") || str_startswith(rdata, "POST"))
+    {
+    } else {
+        req_destruct(r);
+        sock_close(client);
+        __syscall__(1, -1, -1, -1, -1, -1, _SYS_EXIT);
+    }
 
     r->lines = split_string(rdata, '\n', &r->line_count);
     if(r->line_count > 0 && r->line_count < 2) {
         req_destruct(r);
         _pfree(rdata);
-        __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
+        __syscall__(1, -1, -1, -1, -1, -1, _SYS_EXIT);
     }
 
     int argc = 0;
     sArr args = split_string(r->lines[0], ' ', &argc);
-    if(argc > 0 && argc < 3) {
+    if(argc > 0 && argc < 3 || !args) {
         req_destruct(r);
         _pfree(rdata);
-        __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
+        __syscall__(1, -1, -1, -1, -1, -1, _SYS_EXIT);
     }
 
     r->req_type = str_dup(args[0]);
@@ -73,47 +75,14 @@ void request_handler()
     r->req_version = str_dup(args[2]);
     pfree_array((array)args);
 
-    i32 rpos = 0;
-    i32 len = str_len(r->route);
-    if((rpos = find_char(r->route, '?')) > -1)
-    {
-        r->route[rpos] = '\0';
-        string copy = (string)((string)r->route + rpos + 1);
-        _printf("Route: %s | Copy: %s | Pos: %d\n", r->route, copy, &rpos);
+    parse_req_info(r);
 
-        i32 g_argc = 0;
-        r->GET = init_map();
-        if(find_char(r->route, '&') > -1)
-        {
-            sArr get_params = split_string(r->route, '&', &g_argc);
-            if(g_argc > 0)
-            {
-                for(i32 i = 0; i < g_argc; i++) {
-                    i32 k_argc = 0;
-                    sArr key = split_string(get_params[i], '=', &k_argc);
-                    if(k_argc != 2) fsl_panic("& malformed request");
-                    map_append(r->GET, key[0], key[1]);
-
-                    pfree_array((array)key);
-                }
-            }
-
-            pfree_array((array)get_params);
-        } else {
-            sArr key = split_string(copy, '=', &g_argc);
-            if(g_argc != 2) fsl_panic("malformed request");
-            map_append(r->GET, key[0], key[1]);
-            pfree_array((array)key);
-        }
-    }
-
-    
     int pos = 0;
     if((pos = search_route(WEB_SERVER, r->route)) == -1)
     {
         req_destruct(r);
         _pfree(rdata);
-        __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
+        __syscall__(1, -1, -1, -1, -1, -1, _SYS_EXIT);
     }
 
     r->body = allocate(0, 4096);
@@ -153,6 +122,48 @@ void request_handler()
     req_destruct(r);
     _pfree(rdata);
     __syscall__(0, -1, -1, -1, -1, -1, _SYS_EXIT);
+}
+
+void parse_req_info(req_t r)
+{
+    if(!r)
+        return;
+
+    int rpos = 0;
+    if((rpos = find_char(r->route, '?')) > -1)
+    {
+        r->route[rpos] = '\0';
+        string copy = (string)((string)r->route + rpos + 1);
+        _printf("Route: %s | Copy: %s | Pos: %d\n", r->route, copy, &rpos);
+
+        i32 g_argc = 0;
+        r->GET = init_map();
+        if(find_char(r->route, '&') > -1)
+        {
+            sArr get_params = split_string(r->route, '&', &g_argc);
+            if(g_argc > 0)
+            {
+                i32 k_argc = 0;
+                for(i32 i = 0; i < g_argc; i++) {
+                    sArr key = split_string(get_params[i], '=', &k_argc);
+                    if(k_argc == 0 || (k_argc > 0 && k_argc != 2))
+                        fsl_panic("& malformed request");
+
+                    map_append(r->GET, key[0], key[1]);
+                    pfree_array((array)key);
+                }
+            }
+
+            pfree_array((array)get_params);
+        } else {
+            sArr key = split_string(copy, '=', &g_argc);
+            if(g_argc == 0 || (g_argc > 0 && g_argc < 3))
+                fsl_panic("malformed request");
+            
+            map_append(r->GET, key[0], key[1]);
+            pfree_array((array)key);
+        }
+    }
 }
 
 void send_response(sock_t sock, status_code_t c0de, map_t headers, map_t cookies, string body)
@@ -201,7 +212,7 @@ i32 search_route(web_t w, string q)
         if(!w->router[i]) break;
         if(str_cmp(q, "/") && len > 1) {
             return 0;
-        } else if(mem_cmp(((route_t)w->router[i])->route, q, _str_len(((route_t)w->router[i])->route))) {
+        } else if(str_cmp(((route_t)w->router[i])->route, q)) {
             return i;
         }
     }

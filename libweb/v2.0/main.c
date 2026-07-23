@@ -19,8 +19,8 @@ void _test(req_t r)
 
 int entry()
 {
-    toggle_debug_mode();
-	// uninit_mem();
+    // toggle_debug_mode();
+	uninit_mem();
 	set_heap_sz(_HEAP_PAGE_ * 40);
 	init_mem();
     
